@@ -38,7 +38,7 @@ class Umgyoh
   # デーモン化
   def daemonize
     begin
-      Process.daemon
+      Process.daemon(true, true)
 
       # pid ファイル生成
       @pid_file = File.open(UMGYOH_PID_FILE, "w") { |f| f << Process.pid }
