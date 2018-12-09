@@ -3,9 +3,9 @@ class Umgyoh
   require "socket"
 
   # umgyoh pid ファイル
-  UMGYOH_PID_FILE = "./umgyoh.pid".freeze
+  UMGYOH_PID_FILE = "./tmp/umgyoh.pid".freeze
   # umgyoh log ファイル
-  UMGYOH_LOG_FILE = "./umgyoh.log".freeze
+  UMGYOH_LOG_FILE = "./tmp/umgyoh.log".freeze
   # umgyoh デフォルトポート番号
   UMGYOH_DEFAULT_PORT = 2019
 
@@ -38,6 +38,7 @@ class Umgyoh
   # デーモン化
   def daemonize
     begin
+      # デーモン化
       Process.daemon(true, true)
 
       # pid ファイル生成
@@ -52,21 +53,26 @@ class Umgyoh
 
   # 処理実行
   def execute
-    tcp_server = TCPServer.open(2019)
+    @tcp_server = TCPServer.open(UMGYOH_DEFAULT_PORT)
+
+    @socket = @tcp_server.accept
+
+    puts("@socket.peeraddr => #{@socket.peeraddr}")
+    @log_file.puts("@socket.peeraddr => #{@socket.peeraddr}")
 
     while true
-      sock = tcp_server.accept
+      while buf = @socket.gets
+        puts("buf => #{buf}")
+        @log_file.puts("buf => #{buf}")
 
-      puts("#{sock.peeraddr}")
-      @log_file.puts("#{sock.peeraddr}")
-
-      while buf = sock.gets
-        puts("#{buf}")
-        @log_file.puts("#{buf}")
+        @socket.puts("200")
       end
     end
+  end
 
-    tcp_server.close
+  def stop
+    @socket.close
+    @tcp_server.close
   end
 end
 
