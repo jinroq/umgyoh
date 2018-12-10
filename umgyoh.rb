@@ -1,6 +1,7 @@
 # coding: utf-8
 class Umgyoh
   require "socket"
+  require "json"
 
   # umgyoh pid ファイル
   UMGYOH_PID_FILE = "./tmp/umgyoh.pid".freeze
@@ -44,8 +45,8 @@ class Umgyoh
       # pid ファイル生成
       File.open(UMGYOH_PID_FILE, "w") { |f| f << Process.pid }
     rescue => e
-      error_message = "Error. #{self.class.name}.daemonize #{e}"
-      log_info(error_message)
+      error_message = "#{self.class.name}.daemonize #{e}"
+      log_error(error_message)
       STDERR.puts(error_message)
       exit(1)
     end
@@ -59,12 +60,19 @@ class Umgyoh
       # 接続要求を受け付ける TCPSocket を生成。
       socket = @tcp_server.accept
 
-      puts("socket.peeraddr => #{socket.peeraddr}")
-      log_info("socket.peeraddr => #{socket.peeraddr}")
+      # 接続相手先ソケットの情報。
+      peeraddr = socket.peeraddr
+      log_info("socket.peeraddr => #{peeraddr}")
 
-      while buf = socket.gets
-        puts("buf => #{buf}")
-        log_info("buf => #{buf}")
+      # クライアントからのデータを全て受け取る。
+      while json = socket.gets
+        log_info("json => #{json}")
+        begin
+          hash = JSON.parse(json)
+        rescue => e
+          log_error("#{e.message}")
+        end
+        log_info("hash => #{hash.inspect}")
 
         socket.puts("200")
       end
@@ -85,6 +93,10 @@ class Umgyoh
     File.open(UMGYOH_LOG_FILE, "a+") do |f|
       f.puts("[#{now}] #{message}")
     end
+  end
+
+  def log_error(message = '')
+    log_info("[ERROR] #{message}")
   end
 end
 
