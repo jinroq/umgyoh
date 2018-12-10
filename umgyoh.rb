@@ -55,23 +55,26 @@ class Umgyoh
   def execute
     @tcp_server = TCPServer.open(UMGYOH_DEFAULT_PORT)
 
-    @socket = @tcp_server.accept
-
-    puts("@socket.peeraddr => #{@socket.peeraddr}")
-    @log_file.puts("@socket.peeraddr => #{@socket.peeraddr}")
-
     while true
-      while buf = @socket.gets
+      # 接続要求を受け付ける TCPSocket を生成。
+      socket = @tcp_server.accept
+
+      puts("socket.peeraddr => #{socket.peeraddr}")
+      @log_file.puts("socket.peeraddr => #{socket.peeraddr}")
+
+      while buf = socket.gets
         puts("buf => #{buf}")
         @log_file.puts("buf => #{buf}")
 
-        @socket.puts("200")
+        socket.puts("200")
       end
+
+      # TCPSocket を閉じる。
+      socket.close
     end
   end
 
   def stop
-    @socket.close
     @tcp_server.close
   end
 end
