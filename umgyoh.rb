@@ -12,15 +12,15 @@ class Umgyoh
   # 初期化処理
   def initialize
     # pid ファイル作成
-    @pid_file = File.open(UMGYOH_PID_FILE, "w")
+    File.open(UMGYOH_PID_FILE, "w").close
     # log ファイル作成
-    @log_file = File.open(UMGYOH_LOG_FILE, "w")
+    File.open(UMGYOH_LOG_FILE, "a+").close
   end
 
   # 起動
   def run
     begin
-      @log_file.puts("== Umgyoh Begin.")
+      log_info("== Umgyoh Begin.")
 
       # デーモン化
       daemonize
@@ -28,7 +28,7 @@ class Umgyoh
       # 処理実行
       execute
 
-      @log_file.puts("== Umgyo End.")
+      log_info("== Umgyoh End.")
     rescue => e
     end
   end
@@ -42,10 +42,10 @@ class Umgyoh
       Process.daemon(true, true)
 
       # pid ファイル生成
-      @pid_file = File.open(UMGYOH_PID_FILE, "w") { |f| f << Process.pid }
+      File.open(UMGYOH_PID_FILE, "w") { |f| f << Process.pid }
     rescue => e
       error_message = "Error. #{self.class.name}.daemonize #{e}"
-      @log_file.puts(error_message)
+      log_info(error_message)
       STDERR.puts(error_message)
       exit(1)
     end
@@ -60,11 +60,11 @@ class Umgyoh
       socket = @tcp_server.accept
 
       puts("socket.peeraddr => #{socket.peeraddr}")
-      @log_file.puts("socket.peeraddr => #{socket.peeraddr}")
+      log_info("socket.peeraddr => #{socket.peeraddr}")
 
       while buf = socket.gets
         puts("buf => #{buf}")
-        @log_file.puts("buf => #{buf}")
+        log_info("buf => #{buf}")
 
         socket.puts("200")
       end
@@ -74,8 +74,17 @@ class Umgyoh
     end
   end
 
+  # 停止処理
   def stop
     @tcp_server.close
+  end
+
+  # ロガー
+  def log_info(message = '')
+    now = Time.now
+    File.open(UMGYOH_LOG_FILE, "a+") do |f|
+      f.puts("[#{now}] #{message}")
+    end
   end
 end
 
