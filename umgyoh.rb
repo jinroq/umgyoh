@@ -1,4 +1,5 @@
 # coding: utf-8
+# Umgyoh MDM Client for Linux
 class Umgyoh
   require "socket"
   require "json"
@@ -56,29 +57,46 @@ class Umgyoh
   def execute
     @tcp_server = TCPServer.open(UMGYOH_DEFAULT_PORT)
 
-    while true
-      # 接続要求を受け付ける TCPSocket を生成。
-      socket = @tcp_server.accept
+    threads = []
 
-      # 接続相手先ソケットの情報。
-      peeraddr = socket.peeraddr
-      log_info("socket.peeraddr => #{peeraddr}")
+    # TCPServer 用の Thread を作成
+    threads << Thread.new do |thread|
+      while true
+        # 接続要求を受け付ける TCPSocket を生成。
+        socket = @tcp_server.accept
 
-      # クライアントからのデータを全て受け取る。
-      while json = socket.gets
-        log_info("json => #{json}")
-        begin
-          hash = JSON.parse(json)
-        rescue => e
-          log_error("#{e.message}")
+        # 接続相手先ソケットの情報。
+        peeraddr = socket.peeraddr
+        log_info("socket.peeraddr => #{peeraddr}")
+
+        # クライアントからのデータを全て受け取る。
+        while json = socket.gets
+          log_info("json => #{json}")
+          begin
+            hash = JSON.parse(json)
+          rescue => e
+            log_error("#{e.message}")
+          end
+          log_info("hash => #{hash.inspect}")
+
+          socket.puts("200")
         end
-        log_info("hash => #{hash.inspect}")
 
-        socket.puts("200")
+        # TCPSocket を閉じる。
+        socket.close
       end
+    end
 
-      # TCPSocket を閉じる。
-      socket.close
+    # aum-server の API を叩くための Thread を作成
+    threads << Thread.fork do |thread|
+      message = "Access Aum-server!"
+      puts(message)
+      log_info(message)
+    end
+
+    # Thread を使用
+    threads.each do |thread|
+      thread.join
     end
   end
 
